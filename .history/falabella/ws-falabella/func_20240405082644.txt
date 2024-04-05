@@ -1,0 +1,169 @@
+def create_df():
+    # create a list to store the data
+    data = []
+    
+    for link in pages_links:
+        print(link)
+        link_per = link
+        driver.get(link)
+        sections = driver.find_elements(By.CLASS_NAME, "pod-link")
+        print(len(sections))
+        
+        for section in sections:
+            
+
+            genero = tipo = horma = material = material_suela = material_interior = temporada = hecho_en = disciplina = material_plantilla = brand = name =  None
+            # get the brand of the product
+            brand = section.find_element(By.CLASS_NAME, "title-rebrand").text
+            print("brand: " + brand)
+            # get the name of the product
+            name = section.find_element(By.CLASS_NAME, "pod-subTitle").text
+            print("name: " + name)
+            # get the price of the product
+            
+
+            cmr_price = None
+            event_price = None
+            full_price = None
+
+            # Intenta encontrar los tres precios, si es posible
+            try:
+                cmr_price = section.find_element(By.CLASS_NAME, "prices-0").get_attribute("data-cmr-price")
+                print("cmr price: " + str(cmr_price))
+            except Exception:
+                pass  # Si no se encuentra, simplemente continúa
+
+            try:
+                event_price = section.find_element(By.CLASS_NAME, "prices-1").get_attribute("data-event-price")
+                print("event price: " + str(event_price))
+            except Exception:
+                pass  # Si no se encuentra, simplemente continúa
+
+            try:
+                full_price = section.find_element(By.CLASS_NAME, "prices-2").get_attribute("data-normal-price")
+                print("full price: " + str(full_price))
+            except Exception:
+                pass  # Si no se encuentra, simplemente continúa
+
+            # Si no se encontraron los tres precios, intenta encontrar la configuración de un solo precio o dos precios
+            if not cmr_price and not event_price and not full_price:
+                try:
+                    full_price = section.find_element(By.CLASS_NAME, "prices-0").get_attribute("data-internet-price")
+                    print("full price: " + str(full_price))
+                except Exception:
+                    pass  # Si no se encuentra, simplemente continúa
+
+                try:
+                    event_price = section.find_element(By.CLASS_NAME, "prices-0").get_attribute("data-event-price")
+                    print("event price: " + str(event_price))
+                except Exception:
+                    pass  # Si no se encuentra, simplemente continúa
+
+                try:
+                    full_price = section.find_element(By.CLASS_NAME, "prices-1").get_attribute("data-normal-price")
+                    print("full price: " + str(full_price))
+                except Exception:
+                    pass  # Si no se encuentra, simplemente continúa
+
+                
+                
+            
+            
+            # get the href of the product
+            href = section.get_attribute("href")
+            driver.get(href)
+            # print the href
+            print(href)
+            buttons = driver.find_elements(By.CLASS_NAME, "mkp-swatchButton-collapseButton")
+            for button in buttons:
+                if button.text == "ver más":
+                    button.click()
+                    print("button clicked")
+            
+            
+            # get the product details
+            table = driver.find_element(By.CLASS_NAME, "specification-table")
+            print(table)
+            rows = table.find_elements(By.TAG_NAME, "tr")
+            print(rows)
+            for row in rows:
+                
+                try:
+                    # Encuentra todas las celdas en la fila
+                    values = row.find_elements(By.TAG_NAME, "td")
+                    if len(values) < 2:
+                        # Si no hay suficientes celdas, continua con la siguiente fila
+                        continue
+
+                    # Obtén el atributo de la primera celda y conviértelo a minúsculas
+                    attribute_name = values[0].text.lower().strip()
+                    # Verifica si la segunda celda tiene texto antes de asignarlo
+                    attribute_value = values[1].text.strip() if values[1].text else None
+                    print(f"{attribute_name}: {attribute_value}")
+
+                    # Asigna el valor del atributo a la variable correspondiente
+                    if attribute_name == "género":
+                        genero = attribute_value
+                        print("la variable genero es: " + genero)
+                    elif attribute_name == "tipo":
+                        tipo = attribute_value
+                    elif attribute_name == "horma":
+                        horma = attribute_value
+                    elif attribute_name == "material":
+                        material = attribute_value
+                    elif attribute_name == "material del forro":
+                        material_forro = attribute_value
+                    elif attribute_name == "material de la suela":
+                        material_suela = attribute_value
+                    elif attribute_name == "material del interior":
+                        material_interior = attribute_value
+                    elif attribute_name == "temporada":
+                        temporada = attribute_value
+                    elif attribute_name == "hecho en":
+                        hecho_en = attribute_value
+                    elif attribute_name == "disciplina":
+                        disciplina = attribute_value
+                        print("disciplina essss: " + disciplina)
+                    elif attribute_name == "material de la plantilla":
+                        material_plantilla = attribute_value
+                        print("material plantilla esssss: " + material_plantilla)
+
+                except Exception as e:
+                    print(f"An exception occurred: {e}")
+                
+            # append the data to the list
+            data.append({
+                'Brand': brand,
+                'Name': name,
+                'CMR Price': cmr_price,
+                'Event Price': event_price,
+                'Full Price': full_price,
+                'Gender': genero,
+                'Type': tipo,
+                'Fit': horma,
+                'Material': material,
+                'Material forro': material_forro,
+                'Sole Material': material_suela,
+                'Interior Material': material_interior,
+                'Season': temporada,
+                'Made In': hecho_en,
+                'Discipline': disciplina,
+                'Insole Material': material_plantilla
+            })   # create a dataframe from the data
+            print(" se ha creado un dataframe ")
+
+            # devolver al driver al anterior link
+            driver.back()
+            # verificar link del driver
+            print(driver.current_url)
+            
+            
+            
+    df = pd.DataFrame(data)
+    
+    return df
+            
+                         
+            
+df = create_df()
+df.to_csv('products.csv', index=False)
